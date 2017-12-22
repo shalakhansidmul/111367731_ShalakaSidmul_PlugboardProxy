@@ -1,0 +1,91 @@
+CSE508 Network Security, Fall 2017
+
+Homework 3: Plugboard Proxy
+
+Submitted by: Shalaka Sidmul
+
+SBUID: 111367731
+
+
+
+Introduction:
+-------------
+Pbproxy adds an extra layer of protection to publicly accessible network services.
+It facilitates encrypted communication between client and server using symmetric key.
+The encryption prevents attacks such as zero day vulnerability [e.g. Heartbleed in OpenSsl]
+
+Implementation details:
+-----------------------
+The client application connects to the proxy and sends data encrypted using the symmetric key.
+The proxy on the server side decrypts the data sent by client and forwards it to the upstream server.
+If the data is tampered/ not encrypted properly, it will be discarded and will not reach the upstream server.
+This protects the upstream server 
+
+The Plugboard Proxy functions in two modes: 
+	1. client mode
+	2. server mode
+
+Client mode:
+	1. Connect to server side proxy 
+	2. read user commands from STDIN (console)
+	3. encrypt user input using supplied symmetric key with AES in Counter mode with 128 bit key
+	4. send encrypted data to server side proxy
+	5. read reply from server side proxy
+	6. decrypt reply received with AES in Counter mode with 128 bit key
+	7. write decrypted reply to STDOUT (console)
+
+Server mode:
+	1. Listen for connection requests from clients.
+	2. accept a request, create a thread to handle messages from that client.
+	3. each thread for client,
+		3.a makes a connection to destination server (sshd)
+		3.b reads messages from client
+		3.c decrypts messages from client using supplied symmetric key with AES in Counter mode with 128 bit key
+		3.d sends the decrypted message to upstream server.
+		3.e reads reply from upstream server
+		3.f encrypts reply from upstream server using supplied symmetric key with AES in Counter mode with 128 bit key
+		3.g sends encrypted reply to client
+
+
+This project has the following files:
+-------------------------------------
+	1. MakeFile
+	2. keygen.c : for generating symmetric key
+	3. pbproxy.c : for reading the arguments and initializing the key proxy in proper mode. (server, client)
+	4. serverProxy.h : implementation of proxy in server mode
+	5. clientProxy.h : implementation of proxy in client mode
+	6. keyfile : a sample key file
+
+Commands for running the Plugboard proxy setup:
+-----------------------------------------------
+	1. create a key   :	./keygen -k <name_of_key_file>     	
+	
+	   creates random key and store it in file with name specified after option '-k-
+	   You can use the sample key file with this project : keyfile
+
+	2. start proxy in	:	./pbproxy -l <listen_port> -k <name_of_key_file> <service_host> <service_port>	
+   	   server mode
+
+	   Starts proxy in server mode. 
+	   The proxy will listen for client requests on port <listen_port>.
+           It will forward only the correctly decrypted requests to service at <service_host:service_port>
+
+	3. start proxy in client mode	:	ssh -o "ProxyCommand ./pbproxy -k <name_of_key_file> <server_name> <port> " localhost
+
+References:
+-----------
+	1. https://tools.ietf.org/html/rfc3686#section-3.1
+   	2. https://vcansimplify.wordpress.com/2013/03/14/c-socket-tutorial-echo-server/
+ 	3. https://stackoverflow.com/questions/38255433/parameter-details-of-openssls-aes-ctr128-encrypt
+ 	4. http://www.gurutechnologies.net/blog/aes-ctr-encryption-in-c/
+	5. http://www.geeksforgeeks.org/socket-programming-cc/
+	6. http://www.adamberent.com/documents/AESbyExample.pdf
+
+
+
+
+
+
+
+
+
